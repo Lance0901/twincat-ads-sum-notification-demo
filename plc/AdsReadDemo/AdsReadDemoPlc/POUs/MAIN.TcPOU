@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="MAIN" Id="{4aa1852a-67b3-4c7a-8e4d-b59226e9a93f}" SpecialFunc="None">
+    <Declaration><![CDATA[// ADS 讀變數示範的資料來源：aValues 每 cycle 更新 (模式 A / B)，stTrigger 定時或依 C# 要求 +1 (模式 C / D)
+PROGRAM MAIN
+VAR
+	aValues          : ARRAY[1..GVL_Param.cValueCount] OF LREAL; // aValues[i] = i + SIN(相位)，每 cycle 都變
+	stTrigger        : ST_Trigger;                               // 模式 C / D 讀這個 (12 bytes)
+	bAutoTrigger     : BOOL := TRUE;                             // TRUE = 每 tTriggerPeriod 自動 +1；C# --trigger host 會改 FALSE
+	tTriggerPeriod   : TIME := GVL_Param.cTriggerPeriod;         // 自動 +1 間隔，可從 ADS 改
+	nHostRequest     : UDINT;                                    // C# --trigger host 寫入新值，下一個 cycle nTrigger +1
+	nPlcTimeNow      : ULINT;                                    // 每 cycle 的 F_GetSystemTime() (100 ns)，C# 估時鐘差用
+	nCycleCount      : UDINT;                                    // 本程式執行次數，看 task 是否真的在跑
+	fPhaseRad        : LREAL;                                    // 目前相位 (rad), 0 ~ 2π
+	fbTriggerTimer   : TON;
+	nLastHostRequest : UDINT;
+	bBump            : BOOL;
+	nIndex           : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[nPlcTimeNow := F_GetSystemTime();
+nCycleCount := nCycleCount + 1;
+
+// 模式 A / B：1000 個 LREAL 每 cycle 都變，C# 讀到的值會不一樣
+fPhaseRad := fPhaseRad + GVL_Param.cPhaseStepRad;
+IF fPhaseRad >= GVL_Param.cTwoPiRad THEN
+	fPhaseRad := fPhaseRad - GVL_Param.cTwoPiRad;
+END_IF
+FOR nIndex := 1 TO GVL_Param.cValueCount DO
+	aValues[nIndex] := INT_TO_LREAL(nIndex) + SIN(fPhaseRad + INT_TO_LREAL(nIndex) * GVL_Param.cElementPhaseRad);
+END_FOR
+
+// 模式 C / D：定時 +1，或 C# 改了 nHostRequest 就 +1
+fbTriggerTimer(IN := bAutoTrigger, PT := tTriggerPeriod);
+bBump := fbTriggerTimer.Q;
+IF fbTriggerTimer.Q THEN
+	fbTriggerTimer(IN := FALSE); // 重新起算，下個 cycle 再開始計時
+END_IF
+IF nHostRequest <> nLastHostRequest THEN
+	nLastHostRequest := nHostRequest;
+	bBump := TRUE;
+END_IF
+IF bBump THEN
+	stTrigger.nTrigger := stTrigger.nTrigger + 1;
+	stTrigger.nPlcTime := nPlcTimeNow;
+END_IF
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

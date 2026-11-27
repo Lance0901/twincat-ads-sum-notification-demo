@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <DUT Name="ST_Trigger" Id="{ae539c59-14fe-4c0d-8ce1-ff7c69bfcad0}">
+    <Declaration><![CDATA[// 模式 C / D 看的觸發值；兩個欄位同一個 cycle 寫入，C# 一次讀 12 bytes
+{attribute 'pack_mode' := '1'}
+TYPE ST_Trigger :
+STRUCT
+	nTrigger : UDINT; // 改值次數，每次 +1
+	nPlcTime : ULINT; // 改值當下的 F_GetSystemTime() (100 ns, since 1601-01-01 UTC)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>
