@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <GVL Name="GVL_Param" Id="{129a9a85-1f26-499e-8a43-91fde5d9dfe8}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL CONSTANT
+	cValueCount      : INT := 1000;                // MAIN.aValues 元素數 (模式 A / B 讀的量)
+	cPhaseStepRad    : LREAL := 0.05;              // 每 cycle 相位增量 (rad)
+	cElementPhaseRad : LREAL := 0.01;              // 相鄰元素的相位差 (rad)
+	cTwoPiRad        : LREAL := 6.283185307179586; // 2π (rad)
+	cTriggerPeriod   : TIME := T#2S;               // nTrigger 自動 +1 的預設間隔
+END_VAR
+]]></Declaration>
+  </GVL>
+</TcPlcObject>
